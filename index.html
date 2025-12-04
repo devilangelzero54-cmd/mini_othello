@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ミニオセロ 6×6</title>
+  <!-- v0.1 layout only -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="game-wrapper">
+    <!-- ヘッダー：タイトル＋サブタイトル -->
+    <header id="header">
+      <h1 id="game-title">ミニオセロゲーム</h1>
+      <p id="game-subtitle">白黒つけるよ！</p>
+
+      <!-- ルールボタン（中身は後でJS） -->
+      <button id="rule-button" type="button" aria-label="遊び方を見る">？</button>
+    </header>
+
+    <!-- メインエリア：盤面＋キャラ -->
+    <main id="main-area">
+      <!-- 6×6 盤面：JSでマスを生成 -->
+      <div id="board-container">
+        <div id="board"></div>
+      </div>
+
+      <!-- キャラ＋フキダシ画像（chara_bubble.png）＋テキスト -->
+      <section id="chara-section">
+        <img
+          id="chara-bubble"
+          src="images/chara_bubble.png"
+          alt="姪っ狐ミニオセロナビゲーター"
+        />
+        <div id="bubble-text">君の番だよ♪</div>
+      </section>
+    </main>
+
+    <!-- ルール説明のオーバーレイ（最初に表示するやつ） -->
+    <div id="rule-overlay" class="overlay hidden">
+      <div class="overlay-panel">
+        <h2>4×4じゃないよ、6×6ミニオセロだよ</h2>
+        <p>
+          このゲームは、6×6のミニオセロです。<br />
+          ルールはふつうのオセロとほぼ同じで、<br />
+          自分の石で相手の石をはさんでひっくり返していきます。
+        </p>
+        <h3>基本ルール</h3>
+        <ul>
+          <li>自分の色の石で、相手の石を1列にはさめるマスにだけ置けます。</li>
+          <li>はさんだ相手の石は、全部自分の色にひっくり返ります。</li>
+          <li>置けるマスがないときは、そのターンはパスになります。</li>
+        </ul>
+        <button id="start-button" type="button">ゲームスタート</button>
+      </div>
+    </div>
+
+    <!-- リザルト表示用のオーバーレイ（WIN/LOSE/DRAW） -->
+    <div id="result-overlay" class="overlay hidden">
+      <div class="overlay-panel">
+        <img id="result-chara" src="" alt="対局結果キャラ" />
+        <p id="result-text"></p>
+        <button id="retry-button" type="button">もう一度あそぶ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ゲームロジック本体 -->
+  <script src="script.js"></script>
+</body>
+</html>
