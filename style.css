@@ -1,0 +1,155 @@
+/* v0.1 layout: 全体の骨組みだけ */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  background: #f0f8ff;
+  display: flex;
+  justify-content: center;
+}
+
+#game-wrapper {
+  width: 100%;
+  max-width: 480px;
+  padding: 8px 8px 16px;
+  position: relative;
+}
+
+/* タイトルまわり */
+#header {
+  text-align: center;
+  position: relative;
+  padding-top: 4px;
+}
+
+#game-title {
+  margin: 4px 0 0;
+  font-size: 20px;
+}
+
+#game-subtitle {
+  margin: 0;
+  font-size: 14px;
+}
+
+/* ルールボタン（右上の？） */
+#rule-button {
+  position: absolute;
+  top: 0;
+  right: 4px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* メインエリア縦並び */
+#main-area {
+  margin-top: 8px;
+}
+
+/* 盤面まわり */
+#board-container {
+  display: flex;
+  justify-content: center;
+}
+
+#board {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr); /* 6×6 */
+  gap: 2px;
+  width: 100%;
+  max-width: 360px;
+  aspect-ratio: 1 / 1; /* 正方形 */
+  background: #2f7a3e; /* 盤の緑 */
+  padding: 4px;
+  border-radius: 10px;
+}
+
+/* マス（後でJSでbutton生成） */
+.cell {
+  background: #3b8f4a;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  border-radius: 4px;
+  position: relative;
+}
+
+.cell img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* キャラ＋フキダシエリア */
+#chara-section {
+  margin-top: 4px;
+  position: relative;
+}
+
+#chara-bubble {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* フキダシ内テキスト（上に重ねる） */
+#bubble-text {
+  position: absolute;
+  /* 最初はざっくり、このあと微調整用 */
+  left: 18%;
+  top: 10%;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+/* オーバーレイ共通（ルール・リザルト） */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+.overlay-panel {
+  background: #ffffff;
+  padding: 12px;
+  width: 85vw;
+  max-width: 360px;
+  max-height: 80vh;
+  overflow-y: auto;
+  border-radius: 12px;
+  font-size: 14px;
+}
+
+.overlay-panel h2 {
+  margin-top: 0;
+  font-size: 18px;
+  text-align: center;
+}
+
+.overlay-panel button {
+  display: block;
+  margin: 12px auto 0;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* 非表示用 */
+.hidden {
+  display: none;
+}
