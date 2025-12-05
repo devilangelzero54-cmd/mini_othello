@@ -261,23 +261,39 @@ function onCellClick(e) {
   handleTurnStart();
 }
 
-// ===== AIロジック（弱め） =====
-
+// ===== 程よいAI =====
+// POSITION_SCORE の値をもとに、"ほどよく最善手" を選びつつ
+// ランダム性を20%混ぜて人間味を出す。
 function chooseAiMove(moves) {
-  if (moves.length === 0) return null;
+    if (moves.length === 0) return null;
 
-  let bestScore = -Infinity;
-  let bestMoves = [];
-
-  for (const [x, y] of moves) {
-    const score = POSITION_SCORE[y][x] ?? 0;
-    if (score > bestScore) {
-      bestScore = score;
-      bestMoves = [[x, y]];
-    } else if (score === bestScore) {
-      bestMoves.push([x, y]);
+    // 20%の確率で、わざと評価しないでランダムに打つ（弱みを出す）
+    const randomMistakeRate = 0.2;
+    if (Math.random() < randomMistakeRate) {
+        const idx = Math.floor(Math.random() * moves.length);
+        return moves[idx];
     }
-  }
+
+    // 残り80%は評価値を見て最適に近い手を選ぶ
+    let bestScore = -Infinity;
+    let bestMoves = [];
+
+    for (const [x, y] of moves) {
+        const score = POSITION_SCORE[y][x] ?? 0;
+
+        if (score > bestScore) {
+            bestScore = score;
+            bestMoves = [[x, y]];
+        } else if (score === bestScore) {
+            bestMoves.push([x, y]);
+        }
+    }
+
+    // 評価が同じ複数候補があるときはランダムで選ぶ
+    const idx = Math.floor(Math.random() * bestMoves.length);
+    return bestMoves[idx];
+}
+
 
   // 同点候補からランダム
   const idx = Math.floor(Math.random() * bestMoves.length);
@@ -291,12 +307,6 @@ function thinkAndMoveAI() {
   const moves = getValidMoves(CELL_WHITE);
   if (moves.length === 0) {
     // 念のため。ここに来る前に handleTurnStart で処理されているはず
-    handleTurnStart();
-    return;
-  }
-
-  const move = chooseAiMove(moves);
-  if (!move) {
     handleTurnStart();
     return;
   }
