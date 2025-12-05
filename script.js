@@ -1,9 +1,9 @@
-// v0.3: 6×6 盤面 + 合法手チェック + ひっくり返し + パス + リザルト
+// v0.4: 6×6 盤面 + 合法手チェック + ひっくり返し + パス + リザルト + 弱めAI
 
 const BOARD_SIZE = 6;
 const CELL_EMPTY = 0;
-const CELL_BLACK = 1; // プレイヤー（仮）
-const CELL_WHITE = 2; // 相手（仮）
+const CELL_BLACK = 1; // プレイヤー
+const CELL_WHITE = 2; // AI
 
 // 8方向
 const DIRECTIONS = [
@@ -20,6 +20,17 @@ const DIRECTIONS = [
 let board = []; // board[y][x]
 let currentPlayer = CELL_BLACK;
 let gameEnded = false;
+let isPlayerTurn = true; // 黒＝プレイヤーの番かどうか
+
+// AI用のかんたん評価マップ（角が強い）
+const POSITION_SCORE = [
+  [4, -1, 2, 2, -1, 4],
+  [-1, -2, 1, 1, -2, -1],
+  [2, 1, 1, 1, 1, 2],
+  [2, 1, 1, 1, 1, 2],
+  [-1, -2, 1, 1, -2, -1],
+  [4, -1, 2, 2, -1, 4],
+];
 
 // ===== ユーティリティ =====
 
@@ -31,7 +42,6 @@ function getOpponent(player) {
   return player === CELL_BLACK ? CELL_WHITE : CELL_BLACK;
 }
 
-// 石数カウント
 function countStones() {
   let black = 0;
   let white = 0;
@@ -44,6 +54,11 @@ function countStones() {
   return { black, white };
 }
 
+function setBubble(text) {
+  const bubbleText = document.getElementById("bubble-text");
+  bubbleText.textContent = text;
+}
+
 // ===== 盤面初期化 =====
 
 function initBoard() {
@@ -52,7 +67,7 @@ function initBoard() {
   );
 
   const mid1 = BOARD_SIZE / 2 - 1; // 2
-  const mid2 = BOARD_SIZE / 2; // 3
+  const mid2 = BOARD_SIZE / 2;     // 3
 
   board[mid1][mid1] = CELL_WHITE;
   board[mid2][mid2] = CELL_WHITE;
@@ -61,11 +76,11 @@ function initBoard() {
 
   currentPlayer = CELL_BLACK;
   gameEnded = false;
+  isPlayerTurn = true;
 }
 
 // ===== 合法手チェック =====
 
-// (x, y) に player が打ったとき、ひっくり返る座標リスト
 function getFlipsForMove(x, y, player) {
   if (!inBounds(x, y)) return [];
   if (board[y][x] !== CELL_EMPTY) return [];
@@ -96,12 +111,10 @@ function getFlipsForMove(x, y, player) {
   return allFlips;
 }
 
-// 打てるかどうか
 function canPlace(x, y, player) {
   return getFlipsForMove(x, y, player).length > 0;
 }
 
-// player に合法手がひとつでもあるか
 function hasAnyValidMove(player) {
   for (let y = 0; y < BOARD_SIZE; y++) {
     for (let x = 0; x < BOARD_SIZE; x++) {
@@ -111,13 +124,21 @@ function hasAnyValidMove(player) {
   return false;
 }
 
-// ===== 石を置いてひっくり返す =====
+function getValidMoves(player) {
+  const moves = [];
+  for (let y = 0; y < BOARD_SIZE; y++) {
+    for (let x = 0; x < BOARD_SIZE; x++) {
+      if (canPlace(x, y, player)) moves.push([x, y]);
+    }
+  }
+  return moves;
+}
+
+// ===== 石を置く =====
 
 function placeStone(x, y, player) {
   const flips = getFlipsForMove(x, y, player);
-  if (flips.length === 0) {
-    return false; // 置けない
-  }
+  if (flips.length === 0) return false;
 
   board[y][x] = player;
   for (const [fx, fy] of flips) {
@@ -156,68 +177,141 @@ function renderBoard() {
   }
 }
 
-// ===== ターン後の処理（パス & 終了判定） =====
+// ===== ターン管理・パス・終了 =====
 
-function handleAfterMove() {
-  // まず currentPlayer に合法手があるか確認
-  if (hasAnyValidMove(currentPlayer)) {
-    updateBubbleText();
-    return;
+function updateBubbleForTurn() {
+  if (gameEnded) return;
+
+  if (currentPlayer === CELL_BLACK) {
+    setBubble("君の番だよ♪");
+  } else {
+    setBubble("AIの番だよ♪");
   }
-
-  const opponent = getOpponent(currentPlayer);
-
-  // 相手には合法手がある → パス
-  if (hasAnyValidMove(opponent)) {
-    const bubbleText = document.getElementById("bubble-text");
-    bubbleText.textContent = "打てるマスがないからパスだよ…";
-    currentPlayer = opponent;
-    // すぐ通常表示に戻す
-    setTimeout(updateBubbleText, 900);
-    return;
-  }
-
-  // どちらも打てない → ゲーム終了
-  endGame();
 }
 
-// ===== クリック時 =====
+// ターン開始時の処理（プレイヤー or AI）
+function handleTurnStart() {
+  if (gameEnded) return;
+
+  // 現在のプレイヤーに合法手があるか？
+  if (!hasAnyValidMove(currentPlayer)) {
+    const opponent = getOpponent(currentPlayer);
+
+    // 両者とも打てない → 終了
+    if (!hasAnyValidMove(opponent)) {
+      endGame();
+      return;
+    }
+
+    // パス
+    if (currentPlayer === CELL_BLACK) {
+      setBubble("打てるマスがないからパスだよ…");
+    } else {
+      setBubble("AIは打てるマスがないみたい…パス！");
+    }
+
+    currentPlayer = opponent;
+    isPlayerTurn = (currentPlayer === CELL_BLACK);
+
+    setTimeout(() => {
+      if (gameEnded) return;
+      updateBubbleForTurn();
+      if (!isPlayerTurn) {
+        // AIのターンへ
+        thinkAndMoveAI();
+      }
+    }, 900);
+
+    return;
+  }
+
+  // 打てる手がある場合
+  if (currentPlayer === CELL_BLACK) {
+    isPlayerTurn = true;
+    updateBubbleForTurn();
+  } else {
+    isPlayerTurn = false;
+    // AIターン開始
+    setBubble("AI考え中…");
+    setTimeout(thinkAndMoveAI, 600);
+  }
+}
+
+// ===== プレイヤークリック =====
 
 function onCellClick(e) {
   if (gameEnded) return;
+  if (!isPlayerTurn) return;
+  if (currentPlayer !== CELL_BLACK) return;
 
   const btn = e.currentTarget;
   const x = Number(btn.dataset.x);
   const y = Number(btn.dataset.y);
 
-  const success = placeStone(x, y, currentPlayer);
+  const success = placeStone(x, y, CELL_BLACK);
   if (!success) {
-    // 置けないマス
-    // console.log("そこには置けないよ:", x, y);
+    // 置けないマスは無視
     return;
   }
 
-  // ターン交代
-  currentPlayer = getOpponent(currentPlayer);
   renderBoard();
-  handleAfterMove();
+
+  // プレイヤーの手が終わったのでAIへ
+  currentPlayer = CELL_WHITE;
+  handleTurnStart();
 }
 
-// ===== フキダシ・オーバーレイ =====
+// ===== AIロジック（弱め） =====
 
-function updateBubbleText() {
-  const bubbleText = document.getElementById("bubble-text");
-  bubbleText.textContent =
-    currentPlayer === CELL_BLACK
-      ? "黒の番だよ♪"
-      : "白の番だよ♪";
+function chooseAiMove(moves) {
+  if (moves.length === 0) return null;
+
+  let bestScore = -Infinity;
+  let bestMoves = [];
+
+  for (const [x, y] of moves) {
+    const score = POSITION_SCORE[y][x] ?? 0;
+    if (score > bestScore) {
+      bestScore = score;
+      bestMoves = [[x, y]];
+    } else if (score === bestScore) {
+      bestMoves.push([x, y]);
+    }
+  }
+
+  // 同点候補からランダム
+  const idx = Math.floor(Math.random() * bestMoves.length);
+  return bestMoves[idx];
 }
 
-function setupBubble() {
-  updateBubbleText();
+function thinkAndMoveAI() {
+  if (gameEnded) return;
+  if (currentPlayer !== CELL_WHITE) return;
+
+  const moves = getValidMoves(CELL_WHITE);
+  if (moves.length === 0) {
+    // 念のため。ここに来る前に handleTurnStart で処理されているはず
+    handleTurnStart();
+    return;
+  }
+
+  const move = chooseAiMove(moves);
+  if (!move) {
+    handleTurnStart();
+    return;
+  }
+
+  const [x, y] = move;
+  placeStone(x, y, CELL_WHITE);
+  renderBoard();
+
+  // プレイヤーにターンを戻す
+  currentPlayer = CELL_BLACK;
+  handleTurnStart();
 }
 
-// ルールオーバーレイ
+// ===== オーバーレイ =====
+
 function setupRuleOverlay() {
   const ruleOverlay = document.getElementById("rule-overlay");
   const startButton = document.getElementById("start-button");
@@ -225,6 +319,8 @@ function setupRuleOverlay() {
 
   startButton.addEventListener("click", () => {
     ruleOverlay.classList.add("hidden");
+    // ゲーム開始時点でターン処理を発火
+    handleTurnStart();
   });
 
   ruleButton.addEventListener("click", () => {
@@ -232,7 +328,6 @@ function setupRuleOverlay() {
   });
 }
 
-// リザルト表示
 function endGame() {
   gameEnded = true;
 
@@ -256,7 +351,6 @@ function endGame() {
   overlay.classList.remove("hidden");
 }
 
-// リザルトオーバーレイのボタン
 function setupResultOverlay() {
   const overlay = document.getElementById("result-overlay");
   const retryButton = document.getElementById("retry-button");
@@ -265,7 +359,8 @@ function setupResultOverlay() {
     overlay.classList.add("hidden");
     initBoard();
     renderBoard();
-    updateBubbleText();
+    updateBubbleForTurn();
+    handleTurnStart();
   });
 }
 
@@ -276,5 +371,5 @@ document.addEventListener("DOMContentLoaded", () => {
   renderBoard();
   setupRuleOverlay();
   setupResultOverlay();
-  setupBubble();
+  updateBubbleForTurn(); // 一応初期表示
 });
