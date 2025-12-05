@@ -110,14 +110,34 @@ body {
 }
 
 /* リザルト画面のキャラ用 */
+#result-overlay .overlay-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
 #result-chara {
-  max-width: 70%;      /* パネル幅の70%までに縮小 */
-  max-height: 40vh;    /* 画面の縦40%までに縮小 */
+  max-width: 70%;
+  max-height: 40vh;
   width: auto;
   height: auto;
   object-fit: contain;
   display: block;
-  margin: 0 auto 8px;  /* 下にちょっと余白 */
+  margin: 0 auto 8px;
+}
+
+#result-text {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 4px 0 10px;
+}
+
+#retry-button {
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
 }
 
 /* フキダシ内テキスト（上に重ねる） */
