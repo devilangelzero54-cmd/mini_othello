@@ -1,11 +1,11 @@
-// v0.2: 6×6 盤面 + 合法手チェック + ひっくり返しまで
+// v0.3: 6×6 盤面 + 合法手チェック + ひっくり返し + パス + リザルト
 
 const BOARD_SIZE = 6;
 const CELL_EMPTY = 0;
-const CELL_BLACK = 1; // 仮：先手
-const CELL_WHITE = 2; // 仮：後手
+const CELL_BLACK = 1; // プレイヤー（仮）
+const CELL_WHITE = 2; // 相手（仮）
 
-// 8方向ベクトル
+// 8方向
 const DIRECTIONS = [
   [1, 0],
   [-1, 0],
@@ -18,10 +18,11 @@ const DIRECTIONS = [
 ];
 
 let board = []; // board[y][x]
-let currentPlayer = CELL_BLACK; // 今打つプレイヤー
-let isPlayerTurn = true; // 後でAI導入するときに使う想定
+let currentPlayer = CELL_BLACK;
+let gameEnded = false;
 
-// ユーティリティ
+// ===== ユーティリティ =====
+
 function inBounds(x, y) {
   return x >= 0 && x < BOARD_SIZE && y >= 0 && y < BOARD_SIZE;
 }
@@ -30,28 +31,41 @@ function getOpponent(player) {
   return player === CELL_BLACK ? CELL_WHITE : CELL_BLACK;
 }
 
-// 盤面初期化（全部0 → 中央に4コマ）
+// 石数カウント
+function countStones() {
+  let black = 0;
+  let white = 0;
+  for (let y = 0; y < BOARD_SIZE; y++) {
+    for (let x = 0; x < BOARD_SIZE; x++) {
+      if (board[y][x] === CELL_BLACK) black++;
+      else if (board[y][x] === CELL_WHITE) white++;
+    }
+  }
+  return { black, white };
+}
+
+// ===== 盤面初期化 =====
+
 function initBoard() {
   board = Array.from({ length: BOARD_SIZE }, () =>
     Array(BOARD_SIZE).fill(CELL_EMPTY)
   );
 
-  const mid1 = BOARD_SIZE / 2 - 1; // 6 → 2
-  const mid2 = BOARD_SIZE / 2;     // 6 → 3
+  const mid1 = BOARD_SIZE / 2 - 1; // 2
+  const mid2 = BOARD_SIZE / 2; // 3
 
-  // 標準オセロ配置
   board[mid1][mid1] = CELL_WHITE;
   board[mid2][mid2] = CELL_WHITE;
   board[mid1][mid2] = CELL_BLACK;
   board[mid2][mid1] = CELL_BLACK;
+
+  currentPlayer = CELL_BLACK;
+  gameEnded = false;
 }
 
-// ---------------------------
-// ① 合法手チェック用ロジック
-// ---------------------------
+// ===== 合法手チェック =====
 
-// (x, y) に player が打ったとき、ひっくり返る座標リストを返す。
-// ひとつも返らなければ「そこには置けない」。
+// (x, y) に player が打ったとき、ひっくり返る座標リスト
 function getFlipsForMove(x, y, player) {
   if (!inBounds(x, y)) return [];
   if (board[y][x] !== CELL_EMPTY) return [];
@@ -64,20 +78,17 @@ function getFlipsForMove(x, y, player) {
     let cy = y + dy;
     const flipsInThisDir = [];
 
-    // まず相手の石が連続しているか見る
     while (inBounds(cx, cy) && board[cy][cx] === opponent) {
       flipsInThisDir.push([cx, cy]);
       cx += dx;
       cy += dy;
     }
 
-    // 1つ以上相手の石を挟んで、自分の石で終わっているならOK
     if (
       flipsInThisDir.length > 0 &&
       inBounds(cx, cy) &&
       board[cy][cx] === player
     ) {
-      // この方向でひっくり返る石を追加
       allFlips.push(...flipsInThisDir);
     }
   }
@@ -85,36 +96,37 @@ function getFlipsForMove(x, y, player) {
   return allFlips;
 }
 
-// (x, y) に打てるかどうかだけ知りたいとき
+// 打てるかどうか
 function canPlace(x, y, player) {
-  const flips = getFlipsForMove(x, y, player);
-  return flips.length > 0;
+  return getFlipsForMove(x, y, player).length > 0;
 }
 
-// ---------------------------
-// ② 実際に石を置いてひっくり返す
-// ---------------------------
+// player に合法手がひとつでもあるか
+function hasAnyValidMove(player) {
+  for (let y = 0; y < BOARD_SIZE; y++) {
+    for (let x = 0; x < BOARD_SIZE; x++) {
+      if (canPlace(x, y, player)) return true;
+    }
+  }
+  return false;
+}
+
+// ===== 石を置いてひっくり返す =====
 
 function placeStone(x, y, player) {
   const flips = getFlipsForMove(x, y, player);
   if (flips.length === 0) {
-    return false; // 不正手
+    return false; // 置けない
   }
 
-  // 自分の石を置く
   board[y][x] = player;
-
-  // ひっくり返す
   for (const [fx, fy] of flips) {
     board[fy][fx] = player;
   }
-
   return true;
 }
 
-// ---------------------------
-// ③ 盤面の DOM を生成＆描画
-// ---------------------------
+// ===== 盤面描画 =====
 
 function renderBoard() {
   const boardEl = document.getElementById("board");
@@ -139,44 +151,74 @@ function renderBoard() {
       }
 
       cellBtn.addEventListener("click", onCellClick);
-
       boardEl.appendChild(cellBtn);
     }
   }
 }
 
-// ---------------------------
-// クリック時の処理
-// ---------------------------
+// ===== ターン後の処理（パス & 終了判定） =====
+
+function handleAfterMove() {
+  // まず currentPlayer に合法手があるか確認
+  if (hasAnyValidMove(currentPlayer)) {
+    updateBubbleText();
+    return;
+  }
+
+  const opponent = getOpponent(currentPlayer);
+
+  // 相手には合法手がある → パス
+  if (hasAnyValidMove(opponent)) {
+    const bubbleText = document.getElementById("bubble-text");
+    bubbleText.textContent = "打てるマスがないからパスだよ…";
+    currentPlayer = opponent;
+    // すぐ通常表示に戻す
+    setTimeout(updateBubbleText, 900);
+    return;
+  }
+
+  // どちらも打てない → ゲーム終了
+  endGame();
+}
+
+// ===== クリック時 =====
 
 function onCellClick(e) {
+  if (gameEnded) return;
+
   const btn = e.currentTarget;
   const x = Number(btn.dataset.x);
   const y = Number(btn.dataset.y);
 
-  // 今はとりあえず「2人対戦モード」想定でロジックだけ作る
-  // 将来AI入れるときは「isPlayerTurn」と「currentPlayer」を使って分岐させる。
-
   const success = placeStone(x, y, currentPlayer);
   if (!success) {
-    console.log("そこには置けないよ:", x, y);
-    // TODO: 将来ここでフキダシに「そこは置けないよ〜」とか出してもよい
+    // 置けないマス
+    // console.log("そこには置けないよ:", x, y);
     return;
   }
 
-  // 手が成立したらターン交代
-  currentPlayer =
-    currentPlayer === CELL_BLACK ? CELL_WHITE : CELL_BLACK;
-
+  // ターン交代
+  currentPlayer = getOpponent(currentPlayer);
   renderBoard();
+  handleAfterMove();
+}
+
+// ===== フキダシ・オーバーレイ =====
+
+function updateBubbleText() {
+  const bubbleText = document.getElementById("bubble-text");
+  bubbleText.textContent =
+    currentPlayer === CELL_BLACK
+      ? "黒の番だよ♪"
+      : "白の番だよ♪";
+}
+
+function setupBubble() {
   updateBubbleText();
 }
 
-// ---------------------------
-// フキダシ・オーバーレイ周り
-// ---------------------------
-
-function setupOverlays() {
+// ルールオーバーレイ
+function setupRuleOverlay() {
   const ruleOverlay = document.getElementById("rule-overlay");
   const startButton = document.getElementById("start-button");
   const ruleButton = document.getElementById("rule-button");
@@ -190,26 +232,49 @@ function setupOverlays() {
   });
 }
 
-function updateBubbleText() {
-  const bubbleText = document.getElementById("bubble-text");
-  // v0.2 時点では「2人対戦モード」用の仮テキスト
-  bubbleText.textContent =
-    currentPlayer === CELL_BLACK
-      ? "黒の番だよ♪"
-      : "白の番だよ♪";
+// リザルト表示
+function endGame() {
+  gameEnded = true;
+
+  const { black, white } = countStones();
+  const overlay = document.getElementById("result-overlay");
+  const charaImg = document.getElementById("result-chara");
+  const textEl = document.getElementById("result-text");
+
+  let msg = `黒 ${black} : 白 ${white}`;
+  if (black > white) {
+    charaImg.src = "images/chara_win.png";
+    textEl.textContent = "WIN! " + msg;
+  } else if (white > black) {
+    charaImg.src = "images/chara_lose.png";
+    textEl.textContent = "LOSE... " + msg;
+  } else {
+    charaImg.src = "images/chara_draw.png";
+    textEl.textContent = "DRAW " + msg;
+  }
+
+  overlay.classList.remove("hidden");
 }
 
-function setupBubble() {
-  updateBubbleText();
+// リザルトオーバーレイのボタン
+function setupResultOverlay() {
+  const overlay = document.getElementById("result-overlay");
+  const retryButton = document.getElementById("retry-button");
+
+  retryButton.addEventListener("click", () => {
+    overlay.classList.add("hidden");
+    initBoard();
+    renderBoard();
+    updateBubbleText();
+  });
 }
 
-// ---------------------------
-// 初期化
-// ---------------------------
+// ===== 初期化 =====
 
 document.addEventListener("DOMContentLoaded", () => {
   initBoard();
   renderBoard();
-  setupOverlays();
+  setupRuleOverlay();
+  setupResultOverlay();
   setupBubble();
 });
