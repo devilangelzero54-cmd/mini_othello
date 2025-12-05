@@ -62,15 +62,12 @@ body {
 }
 
 #board {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr); /* 6×6 */
-  gap: 2px;
-  width: 100%;
-  max-width: 360px;
-  aspect-ratio: 1 / 1; /* 正方形 */
-  background: #2f7a3e; /* 盤の緑 */
-  padding: 4px;
-  border-radius: 10px;
+    display: grid;
+    grid-template-columns: repeat(6, calc(100vw / 6));
+    grid-template-rows: repeat(6, calc(100vw / 6));
+    width: 100vw;
+    max-width: 600px;
+    margin: 0 auto;
 }
 
 /* マス（後でJSでbutton生成） */
