@@ -109,6 +109,17 @@ body {
   display: block;
 }
 
+/* リザルト画面のキャラ用 */
+#result-chara {
+  max-width: 70%;      /* パネル幅の70%までに縮小 */
+  max-height: 40vh;    /* 画面の縦40%までに縮小 */
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto 8px;  /* 下にちょっと余白 */
+}
+
 /* フキダシ内テキスト（上に重ねる） */
 #bubble-text {
   position: absolute;
