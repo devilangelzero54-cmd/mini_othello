@@ -1,12 +1,34 @@
-// v0.1: 6×6 盤面を描画して、初期配置だけ置く
+// v0.2: 6×6 盤面 + 合法手チェック + ひっくり返しまで
 
 const BOARD_SIZE = 6;
 const CELL_EMPTY = 0;
-const CELL_BLACK = 1;
-const CELL_WHITE = 2;
+const CELL_BLACK = 1; // 仮：先手
+const CELL_WHITE = 2; // 仮：後手
 
-let board = []; // [y][x] で管理
-let isPlayerTurn = true; // とりあえずプレイヤー先手想定
+// 8方向ベクトル
+const DIRECTIONS = [
+  [1, 0],
+  [-1, 0],
+  [0, 1],
+  [0, -1],
+  [1, 1],
+  [1, -1],
+  [-1, 1],
+  [-1, -1],
+];
+
+let board = []; // board[y][x]
+let currentPlayer = CELL_BLACK; // 今打つプレイヤー
+let isPlayerTurn = true; // 後でAI導入するときに使う想定
+
+// ユーティリティ
+function inBounds(x, y) {
+  return x >= 0 && x < BOARD_SIZE && y >= 0 && y < BOARD_SIZE;
+}
+
+function getOpponent(player) {
+  return player === CELL_BLACK ? CELL_WHITE : CELL_BLACK;
+}
 
 // 盤面初期化（全部0 → 中央に4コマ）
 function initBoard() {
@@ -15,7 +37,7 @@ function initBoard() {
   );
 
   const mid1 = BOARD_SIZE / 2 - 1; // 6 → 2
-  const mid2 = BOARD_SIZE / 2; // 6 → 3
+  const mid2 = BOARD_SIZE / 2;     // 6 → 3
 
   // 標準オセロ配置
   board[mid1][mid1] = CELL_WHITE;
@@ -24,7 +46,76 @@ function initBoard() {
   board[mid2][mid1] = CELL_BLACK;
 }
 
-// 盤面の DOM を生成＆描画
+// ---------------------------
+// ① 合法手チェック用ロジック
+// ---------------------------
+
+// (x, y) に player が打ったとき、ひっくり返る座標リストを返す。
+// ひとつも返らなければ「そこには置けない」。
+function getFlipsForMove(x, y, player) {
+  if (!inBounds(x, y)) return [];
+  if (board[y][x] !== CELL_EMPTY) return [];
+
+  const opponent = getOpponent(player);
+  const allFlips = [];
+
+  for (const [dx, dy] of DIRECTIONS) {
+    let cx = x + dx;
+    let cy = y + dy;
+    const flipsInThisDir = [];
+
+    // まず相手の石が連続しているか見る
+    while (inBounds(cx, cy) && board[cy][cx] === opponent) {
+      flipsInThisDir.push([cx, cy]);
+      cx += dx;
+      cy += dy;
+    }
+
+    // 1つ以上相手の石を挟んで、自分の石で終わっているならOK
+    if (
+      flipsInThisDir.length > 0 &&
+      inBounds(cx, cy) &&
+      board[cy][cx] === player
+    ) {
+      // この方向でひっくり返る石を追加
+      allFlips.push(...flipsInThisDir);
+    }
+  }
+
+  return allFlips;
+}
+
+// (x, y) に打てるかどうかだけ知りたいとき
+function canPlace(x, y, player) {
+  const flips = getFlipsForMove(x, y, player);
+  return flips.length > 0;
+}
+
+// ---------------------------
+// ② 実際に石を置いてひっくり返す
+// ---------------------------
+
+function placeStone(x, y, player) {
+  const flips = getFlipsForMove(x, y, player);
+  if (flips.length === 0) {
+    return false; // 不正手
+  }
+
+  // 自分の石を置く
+  board[y][x] = player;
+
+  // ひっくり返す
+  for (const [fx, fy] of flips) {
+    board[fy][fx] = player;
+  }
+
+  return true;
+}
+
+// ---------------------------
+// ③ 盤面の DOM を生成＆描画
+// ---------------------------
+
 function renderBoard() {
   const boardEl = document.getElementById("board");
   boardEl.innerHTML = "";
@@ -47,7 +138,6 @@ function renderBoard() {
         cellBtn.appendChild(img);
       }
 
-      // クリックイベント（今はデバッグ用に座標を出すだけ）
       cellBtn.addEventListener("click", onCellClick);
 
       boardEl.appendChild(cellBtn);
@@ -55,40 +145,68 @@ function renderBoard() {
   }
 }
 
-// とりあえず今は「どこを押したか」だけログ
+// ---------------------------
+// クリック時の処理
+// ---------------------------
+
 function onCellClick(e) {
   const btn = e.currentTarget;
   const x = Number(btn.dataset.x);
   const y = Number(btn.dataset.y);
-  console.log("clicked:", x, y);
-  // ここに「合法手チェック→石を置く→反転→ターン切替」を今後追加
+
+  // 今はとりあえず「2人対戦モード」想定でロジックだけ作る
+  // 将来AI入れるときは「isPlayerTurn」と「currentPlayer」を使って分岐させる。
+
+  const success = placeStone(x, y, currentPlayer);
+  if (!success) {
+    console.log("そこには置けないよ:", x, y);
+    // TODO: 将来ここでフキダシに「そこは置けないよ〜」とか出してもよい
+    return;
+  }
+
+  // 手が成立したらターン交代
+  currentPlayer =
+    currentPlayer === CELL_BLACK ? CELL_WHITE : CELL_BLACK;
+
+  renderBoard();
+  updateBubbleText();
 }
 
-// ルールオーバーレイの制御（最初は表示しておく前提）
+// ---------------------------
+// フキダシ・オーバーレイ周り
+// ---------------------------
+
 function setupOverlays() {
   const ruleOverlay = document.getElementById("rule-overlay");
   const startButton = document.getElementById("start-button");
   const ruleButton = document.getElementById("rule-button");
 
-  // 最初はルール表示ONのまま。閉じたらゲーム開始。
   startButton.addEventListener("click", () => {
     ruleOverlay.classList.add("hidden");
-    // 将来ここで「ゲーム状態リセット」などを呼び出してもOK
   });
 
-  // 右上の？ボタンで再表示
   ruleButton.addEventListener("click", () => {
     ruleOverlay.classList.remove("hidden");
   });
 }
 
-// フキダシの初期メッセージ
-function setupBubble() {
+function updateBubbleText() {
   const bubbleText = document.getElementById("bubble-text");
-  bubbleText.textContent = "君の番だよ♪";
+  // v0.2 時点では「2人対戦モード」用の仮テキスト
+  bubbleText.textContent =
+    currentPlayer === CELL_BLACK
+      ? "黒の番だよ♪"
+      : "白の番だよ♪";
 }
 
-// ページ読み込み完了時に初期化
+function setupBubble() {
+  updateBubbleText();
+}
+
+// ---------------------------
+// 初期化
+// ---------------------------
+
 document.addEventListener("DOMContentLoaded", () => {
   initBoard();
   renderBoard();
