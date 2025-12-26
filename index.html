@@ -116,12 +116,13 @@
 
       /* フキダシ内テキスト（上に重ねる） */
       #bubble-text {
-        position: absolute;
-        left: 18%;
-        top: 10%;
-        font-size: 16px;
-        font-weight: 500;
-      }
+  position: absolute;
+  left: 20%;          /* 横位置は少し右寄せのまま */
+  top: 50%;           /* 縦のど真ん中あたり */
+  transform: translateY(-50%);  /* 中央に合わせる */
+  font-size: 16px;
+  font-weight: 500;
+}
 
       /* オーバーレイ共通（ルール・リザルト） */
       .overlay {
@@ -172,6 +173,7 @@
         flex-direction: column;
         align-items: center;
         text-align: center;
+        background: rgba(255, 255, 255, 0.8);
       }
 
       #result-chara {
