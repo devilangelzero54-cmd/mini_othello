@@ -380,5 +380,4 @@ initBoard();
 renderBoard();
 setupRuleOverlay();
 setupResultOverlay();
-updateBubbleForTurn(); // 一応初期表示
-});
+updateBubbleForTurn();
