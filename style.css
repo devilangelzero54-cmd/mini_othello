@@ -65,7 +65,7 @@ body {
 #board {
   display: grid;
   grid-template-columns: repeat(6, 1fr);  /* 6列を等分 */
-  grid-template-rows: repeat(6, 1fr);     /* 6行を等分 ←これ大事 */
+  grid-template-rows: repeat(6, 1fr);     /* 6行を等分 */
   gap: 2px;
   width: 100%;
   max-width: 360px;       /* スマホ用にちょい小さめ */
@@ -112,14 +112,13 @@ body {
 /* フキダシ内テキスト（上に重ねる） */
 #bubble-text {
   position: absolute;
-  /* 最初はざっくり、このあと微調整用 */
   left: 18%;
   top: 10%;
   font-size: 16px;
   font-weight: 500;
 }
 
-/* オーバーレイ共通（ルール・リザすルト） */
+/* オーバーレイ共通（ルール・リザルト） */
 .overlay {
   position: fixed;
   inset: 0;
@@ -160,4 +159,41 @@ body {
 /* 非表示用 */
 .hidden {
   display: none;
+}
+
+/* --- ここからリザルト画面用 --- */
+
+/* リザルト画面用：中身を縦に並べて中央寄せ */
+#result-overlay .overlay-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+/* リザルト画面のキャラ画像 */
+#result-chara {
+  max-width: 70%;     /* パネル横幅の70%まで */
+  max-height: 40vh;   /* 画面縦の40%まで（はみ出し防止） */
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto 8px;
+}
+
+/* WIN/LOSE/DRAW ＋ スコア表示 */
+#result-text {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 4px 0 10px;
+}
+
+/* もう一度あそぶボタン */
+#retry-button {
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
 }
