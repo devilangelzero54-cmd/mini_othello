@@ -374,10 +374,11 @@ function setupResultOverlay() {
 
 // ===== 初期化 =====
 
-document.addEventListener("DOMContentLoaded", () => {
-  initBoard();
-  renderBoard();
-  setupRuleOverlay();
-  setupResultOverlay();
-  updateBubbleForTurn(); // 一応初期表示
+// body の一番最後で script を読み込んでいるので、
+// ここではそのまま実行してOK
+initBoard();
+renderBoard();
+setupRuleOverlay();
+setupResultOverlay();
+updateBubbleForTurn(); // 一応初期表示
 });
