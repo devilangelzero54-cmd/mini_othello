@@ -216,13 +216,18 @@
     </div>
 
     <!-- リザルト表示オーバーレイ（WIN/LOSE/DRAW） -->
-    <div id="result-overlay" class="overlay hidden">
-      <div class="overlay-panel">
-        <img id="result-chara" src="" alt="対局結果キャラ" />
-        <p id="result-text"></p>
-        <button id="retry-button" type="button">もう一度あそぶ</button>
-      </div>
-    </div>
+<div id="result-overlay" class="overlay hidden">
+  <div class="overlay-panel">
+    <img id="result-chara" src="" alt="対局結果キャラ" />
+    <p id="result-text"></p>
+
+    <!-- 再戦ボタン -->
+    <button id="retry-button" type="button">もう一度あそぶ</button>
+
+    <!-- メニュー（ゲーム選択）へ戻るボタン：とりあえず形だけ -->
+    <button id="menu-button" type="button">メニューにもどる</button>
+  </div>
+</div>
 
     <script>
       // v0.4: 8×8 盤面 + 合法手チェック + ひっくり返し + パス + リザルト + 程よいAI
@@ -554,6 +559,7 @@
       function setupResultOverlay() {
         const overlay = document.getElementById("result-overlay");
         const retryButton = document.getElementById("retry-button");
+        const menuButton = document.getElementById("menu-button");
 
         retryButton.addEventListener("click", () => {
           overlay.classList.add("hidden");
@@ -562,6 +568,11 @@
           updateBubbleForTurn();
           handleTurnStart();
         });
+        // ★ 追加：メニューに戻る処理
+        menuButton.addEventListener("click", () => {
+          // ここは後で好きなURLに変更
+          window.location.href = "index.html";
+          });
       }
 
       // 初期化
