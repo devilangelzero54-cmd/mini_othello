@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Othello 8×8 mini</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        background: #f0f8ff;
+        display: flex;
+        justify-content: center;
+      }
+      #game-wrapper {
+        width: 100%;
+        max-width: 480px;
+        padding: 8px 8px 16px;
+        position: relative;
+      }
+      /* タイトルまわり */
+      #header {
+        text-align: center;
+        position: relative;
+        padding-top: 4px;
+      }
+      #game-title {
+        margin: 4px 0 0;
+        font-size: 20px;
+      }
+      #game-subtitle {
+        margin: 0;
+        font-size: 14px;
+      }
+      /* ルールボタン（右上の？） */
+      #rule-button {
+        position: absolute;
+        top: 0;
+        right: 4px;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: none;
+        font-weight: bold;
+        cursor: pointer;
+      }
+      /* メインエリア縦並び */
+      #main-area {
+        margin-top: 8px;
+      }
+      /* 盤面まわり */
+      #board-container {
+        display: flex;
+        justify-content: center;
+      }
+      /* 盤全体：コンテナの中で正方形におさめる */
+      #board {
+        display: grid;
+        grid-template-columns: repeat(8, 1fr); /* ★ 6→8 */
+        grid-template-rows: repeat(8, 1fr);    /* ★ 6→8 */
+        gap: 2px;
+        width: 100%;
+        max-width: 360px;
+        aspect-ratio: 1 / 1;
+        padding: 4px;
+        border-radius: 10px;
+        background: #2f7a3e;
+      }
+      /* 1マスごとの見た目＆正方形保証 */
+      .cell {
+        background: #3b8f4a;
+        border: none;
+        padding: 0;
+        margin: 0;
+        cursor: pointer;
+        border-radius: 4px;
+        position: relative;
+        width: 100%;
+        aspect-ratio: 1 / 1;
+        font-size: 0;
+      }
+      .cell img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+      /* キャラ＋フキダシエリア */
+      #chara-section {
+        margin-top: 4px;
+        position: relative;
+      }
+      #chara-bubble {
+        width: 100%;
+        height: auto;
+        display: block;
+      }
+      /* フキダシ内テキスト（上に重ねる） */
+      #bubble-text {
+        position: absolute;
+        left: 18%;
+        top: 20%;        /* 好きな位置に調整してOK */
+        font-size: 16px;
+        font-weight: 500;
+      }
+
+      /* オーバーレイ共通（ルール・リザルト） */
+      .overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 999;
+      }
+      .overlay-panel {
+        background: #ffffff;
+        padding: 12px;
+        width: 85vw;
+        max-width: 360px;
+        max-height: 80vh;
+        overflow-y: auto;
+        border-radius: 12px;
+        font-size: 14px;
+      }
+      .overlay-panel h2 {
+        margin-top: 0;
+        font-size: 18px;
+        text-align: center;
+      }
+      .overlay-panel button {
+        display: block;
+        margin: 12px auto 0;
+        padding: 8px 16px;
+        border-radius: 999px;
+        border: none;
+        font-size: 14px;
+        cursor: pointer;
+      }
+      /* 非表示用 */
+      .hidden {
+        display: none;
+      }
+      /* リザルト画面用 */
+      #result-overlay .overlay-panel {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        background: rgba(255, 255, 255, 0.5);
+      }
+      #result-chara {
+        max-width: 70%;
+        max-height: 40vh;
+        width: auto;
+        height: auto;
+        object-fit: contain;
+        display: block;
+        margin: 0 auto 8px;
+      }
+      #result-text {
+        font-size: 16px;
+        font-weight: 600;
+        margin: 4px 0 10px;
+      }
+      #retry-button {
+        padding: 8px 16px;
+        border-radius: 999px;
+        border: none;
+        font-size: 14px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="game-wrapper">
+      <header id="header">
+        <h1 id="game-title">Othello 8×8 mini</h1>
+        <p id="game-subtitle">白黒つけるわよ！</p>
+        <button id="rule-button" type="button">？</button>
+      </header>
+      <main id="main-area">
+        <div id="board-container">
+          <div id="board"></div>
+        </div>
+        <section id="chara-section">
+          <img
+            id="chara-bubble"
+            src="images/chara_bubble.png"
+            alt="姪っ狐とフキダシ"
+          />
+          <p id="bubble-text">ゲームスタートを押してね♪</p>
+        </section>
+      </main>
+    </div>
+
+    <!-- ルール表示オーバーレイ -->
+    <div id="rule-overlay" class="overlay">
+      <div class="overlay-panel">
+        <h2>あそびかた</h2>
+        <p>8×8のオセロだよ。黒があなた、白がAIだよ。</p>
+        <ul>
+          <li>黒が先手、白（AI）が後手です。</li>
+          <li>自分の石で相手の石を直線で挟むと、その間の石がひっくり返るよ。</li>
+          <li>どこにも打てないときは自動でパスになります。</li>
+          <li>両方とも打てなくなったらゲーム終了。石の多い方が勝ち！</li>
+        </ul>
+        <button id="start-button" type="button">ゲームスタート</button>
+      </div>
+    </div>
+
+    <!-- リザルト表示オーバーレイ（WIN/LOSE/DRAW） -->
+    <div id="result-overlay" class="overlay hidden">
+      <div class="overlay-panel">
+        <img id="result-chara" src="" alt="対局結果キャラ" />
+        <p id="result-text"></p>
+        <button id="retry-button" type="button">もう一度あそぶ</button>
+      </div>
+    </div>
+
+    <script>
+      // v0.4: 8×8 盤面 + 合法手チェック + ひっくり返し + パス + リザルト + 程よいAI
+      const BOARD_SIZE = 8; // ★ 6→8
+
+      const CELL_EMPTY = 0;
+      const CELL_BLACK = 1; // プレイヤー
+      const CELL_WHITE = 2; // AI
+
+      const DIRECTIONS = [
+        [1, 0],
+        [-1, 0],
+        [0, 1],
+        [0, -1],
+        [1, 1],
+        [1, -1],
+        [-1, 1],
+        [-1, -1],
+      ];
+
+      let board = [];
+      let currentPlayer = CELL_BLACK;
+      let gameEnded = false;
+      let isPlayerTurn = true;
+
+      // 8×8 用の評価マップ（角◎、隣接△）
+      const POSITION_SCORE = [
+        [4, -3, 2, 2, 2, 2, -3, 4],
+        [-3, -4, 1, 1, 1, 1, -4, -3],
+        [2, 1, 2, 2, 2, 2, 1, 2],
+        [2, 1, 2, 3, 3, 2, 1, 2],
+        [2, 1, 2, 3, 3, 2, 1, 2],
+        [2, 1, 2, 2, 2, 2, 1, 2],
+        [-3, -4, 1, 1, 1, 1, -4, -3],
+        [4, -3, 2, 2, 2, 2, -3, 4],
+      ];
+
+      function inBounds(x, y) {
+        return x >= 0 && x < BOARD_SIZE && y >= 0 && y < BOARD_SIZE;
+      }
+
+      function getOpponent(player) {
+        return player === CELL_BLACK ? CELL_WHITE : CELL_BLACK;
+      }
+
+      function countStones() {
+        let black = 0;
+        let white = 0;
+        for (let y = 0; y < BOARD_SIZE; y++) {
+          for (let x = 0; x < BOARD_SIZE; x++) {
+            if (board[y][x] === CELL_BLACK) black++;
+            else if (board[y][x] === CELL_WHITE) white++;
+          }
+        }
+        return { black, white };
+      }
+
+      function setBubble(text) {
+        const bubbleText = document.getElementById("bubble-text");
+        bubbleText.textContent = text;
+      }
+
+      function initBoard() {
+        board = Array.from({ length: BOARD_SIZE }, () =>
+          Array(BOARD_SIZE).fill(CELL_EMPTY)
+        );
+        const mid1 = BOARD_SIZE / 2 - 1;
+        const mid2 = BOARD_SIZE / 2;
+        board[mid1][mid1] = CELL_WHITE;
+        board[mid2][mid2] = CELL_WHITE;
+        board[mid1][mid2] = CELL_BLACK;
+        board[mid2][mid1] = CELL_BLACK;
+
+        currentPlayer = CELL_BLACK;
+        gameEnded = false;
+        isPlayerTurn = true;
+      }
+
+      function getFlipsForMove(x, y, player) {
+        if (!inBounds(x, y)) return [];
+        if (board[y][x] !== CELL_EMPTY) return [];
+
+        const opponent = getOpponent(player);
+        const allFlips = [];
+
+        for (const [dx, dy] of DIRECTIONS) {
+          let cx = x + dx;
+          let cy = y + dy;
+          const flipsInThisDir = [];
+
+          while (inBounds(cx, cy) && board[cy][cx] === opponent) {
+            flipsInThisDir.push([cx, cy]);
+            cx += dx;
+            cy += dy;
+          }
+
+          if (
+            flipsInThisDir.length > 0 &&
+            inBounds(cx, cy) &&
+            board[cy][cx] === player
+          ) {
+            allFlips.push(...flipsInThisDir);
+          }
+        }
+
+        return allFlips;
+      }
+
+      function canPlace(x, y, player) {
+        return getFlipsForMove(x, y, player).length > 0;
+      }
+
+      function hasAnyValidMove(player) {
+        for (let y = 0; y < BOARD_SIZE; y++) {
+          for (let x = 0; x < BOARD_SIZE; x++) {
+            if (canPlace(x, y, player)) return true;
+          }
+        }
+        return false;
+      }
+
+      function getValidMoves(player) {
+        const moves = [];
+        for (let y = 0; y < BOARD_SIZE; y++) {
+          for (let x = 0; x < BOARD_SIZE; x++) {
+            if (canPlace(x, y, player)) moves.push([x, y]);
+          }
+        }
+        return moves;
+      }
+
+      function placeStone(x, y, player) {
+        const flips = getFlipsForMove(x, y, player);
+        if (flips.length === 0) return false;
+
+        board[y][x] = player;
+        for (const [fx, fy] of flips) {
+          board[fy][fx] = player;
+        }
+        return true;
+      }
+
+      function renderBoard() {
+        const boardEl = document.getElementById("board");
+        boardEl.innerHTML = "";
+
+        for (let y = 0; y < BOARD_SIZE; y++) {
+          for (let x = 0; x < BOARD_SIZE; x++) {
+            const cellBtn = document.createElement("button");
+            cellBtn.className = "cell";
+            cellBtn.dataset.x = x;
+            cellBtn.dataset.y = y;
+
+            const value = board[y][x];
+            if (value === CELL_BLACK || value === CELL_WHITE) {
+              const img = document.createElement("img");
+              img.src =
+                value === CELL_BLACK ? "images/black.png" : "images/white.png";
+              img.alt = value === CELL_BLACK ? "黒石" : "白石";
+              cellBtn.appendChild(img);
+            }
+
+            cellBtn.addEventListener("click", onCellClick);
+            boardEl.appendChild(cellBtn);
+          }
+        }
+      }
+
+      function updateBubbleForTurn() {
+        if (gameEnded) return;
+
+        if (currentPlayer === CELL_BLACK) {
+          setBubble("君の番だよ♪");
+        } else {
+          setBubble("AIの番だよ♪");
+        }
+      }
+
+      function handleTurnStart() {
+        if (gameEnded) return;
+
+        if (!hasAnyValidMove(currentPlayer)) {
+          const opponent = getOpponent(currentPlayer);
+
+          if (!hasAnyValidMove(opponent)) {
+            endGame();
+            return;
+          }
+
+          if (currentPlayer === CELL_BLACK) {
+            setBubble("パスだよ…");
+          } else {
+            setBubble("AIは…パス！");
+          }
+
+          currentPlayer = opponent;
+          isPlayerTurn = currentPlayer === CELL_BLACK;
+
+          setTimeout(() => {
+            if (gameEnded) return;
+            updateBubbleForTurn();
+            if (!isPlayerTurn) {
+              thinkAndMoveAI();
+            }
+          }, 900);
+
+          return;
+        }
+
+        if (currentPlayer === CELL_BLACK) {
+          isPlayerTurn = true;
+          updateBubbleForTurn();
+        } else {
+          isPlayerTurn = false;
+          setBubble("AI考え中…");
+          setTimeout(thinkAndMoveAI, 600);
+        }
+      }
+
+      function onCellClick(e) {
+        if (gameEnded) return;
+        if (!isPlayerTurn) return;
+        if (currentPlayer !== CELL_BLACK) return;
+
+        const btn = e.currentTarget;
+        const x = Number(btn.dataset.x);
+        const y = Number(btn.dataset.y);
+
+        const success = placeStone(x, y, CELL_BLACK);
+        if (!success) {
+          return;
+        }
+
+        renderBoard();
+
+        currentPlayer = CELL_WHITE;
+        handleTurnStart();
+      }
+
+      function chooseAiMove(moves) {
+        if (moves.length === 0) return null;
+
+        const randomMistakeRate = 0.2;
+        if (Math.random() < randomMistakeRate) {
+          const idx = Math.floor(Math.random() * moves.length);
+          return moves[idx];
+        }
+
+        let bestScore = -Infinity;
+        let bestMoves = [];
+
+        for (const [x, y] of moves) {
+          const score = POSITION_SCORE[y][x] ?? 0;
+
+          if (score > bestScore) {
+            bestScore = score;
+            bestMoves = [[x, y]];
+          } else if (score === bestScore) {
+            bestMoves.push([x, y]);
+          }
+        }
+
+        const idx = Math.floor(Math.random() * bestMoves.length);
+        return bestMoves[idx];
+      }
+
+      function thinkAndMoveAI() {
+        if (gameEnded) return;
+        if (currentPlayer !== CELL_WHITE) return;
+
+        const moves = getValidMoves(CELL_WHITE);
+        if (moves.length === 0) {
+          handleTurnStart();
+          return;
+        }
+
+        const move = chooseAiMove(moves);
+        if (!move) {
+          handleTurnStart();
+          return;
+        }
+
+        const [x, y] = move;
+        placeStone(x, y, CELL_WHITE);
+        renderBoard();
+
+        currentPlayer = CELL_BLACK;
+        handleTurnStart();
+      }
+
+      function setupRuleOverlay() {
+        const ruleOverlay = document.getElementById("rule-overlay");
+        const startButton = document.getElementById("start-button");
+        const ruleButton = document.getElementById("rule-button");
+
+        startButton.addEventListener("click", () => {
+          ruleOverlay.classList.add("hidden");
+          handleTurnStart();
+        });
+
+        ruleButton.addEventListener("click", () => {
+          ruleOverlay.classList.remove("hidden");
+        });
+      }
+
+      function endGame() {
+        gameEnded = true;
+
+        const { black, white } = countStones();
+        const overlay = document.getElementById("result-overlay");
+        const charaImg = document.getElementById("result-chara");
+        const textEl = document.getElementById("result-text");
+
+        let msg = `黒 ${black} : 白 ${white}`;
+        if (black > white) {
+          charaImg.src = "images/chara_win.png";
+          textEl.textContent = "WIN! " + msg;
+        } else if (white > black) {
+          charaImg.src = "images/chara_lose.png";
+          textEl.textContent = "LOSE... " + msg;
+        } else {
+          charaImg.src = "images/chara_draw.png";
+          textEl.textContent = "DRAW " + msg;
+        }
+
+        overlay.classList.remove("hidden");
+      }
+
+      function setupResultOverlay() {
+        const overlay = document.getElementById("result-overlay");
+        const retryButton = document.getElementById("retry-button");
+
+        retryButton.addEventListener("click", () => {
+          overlay.classList.add("hidden");
+          initBoard();
+          renderBoard();
+          updateBubbleForTurn();
+          handleTurnStart();
+        });
+      }
+
+      // 初期化
+      initBoard();
+      renderBoard();
+      setupRuleOverlay();
+      setupResultOverlay();
+      updateBubbleForTurn();
+    </script>
+  </body>
+</html>
