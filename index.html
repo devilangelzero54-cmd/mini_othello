@@ -246,6 +246,7 @@
         <img id="result-chara" src="" alt="対局結果キャラ" />
         <p id="result-text"></p>
         <button id="retry-button" type="button">もう一度あそぶ</button>
+        <button id="menu-button" type="button">メニューにもどる</button>
       </div>
     </div>
 
@@ -580,6 +581,7 @@
       function setupResultOverlay() {
         const overlay = document.getElementById("result-overlay");
         const retryButton = document.getElementById("retry-button");
+        const menuButton  = document.getElementById("menu-button");
 
         retryButton.addEventListener("click", () => {
           overlay.classList.add("hidden");
@@ -587,6 +589,10 @@
           renderBoard();
           updateBubbleForTurn();
           handleTurnStart();
+        menuButton.addEventListener("click", () => {
+    // TODO: メニュー（ゲーム選択）の URL に書き換える
+    // 例: window.location.href = "mini-games.html";
+    window.location.href = "menu.html";  
         });
       }
 
