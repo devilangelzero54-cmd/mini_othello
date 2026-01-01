@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <title>姪っ狐のオセロ対戦 - メニュー</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        background: #f0f8ff;
+        display: flex;
+        justify-content: center;
+      }
+
+      #menu-wrapper {
+        width: 100%;
+        max-width: 480px;
+        padding: 12px 12px 20px;
+      }
+
+      /* タイトル */
+      .menu-title {
+        margin: 8px 0 4px;
+        font-size: 22px;
+        text-align: center;
+      }
+
+      .menu-subtitle {
+        margin: 0 0 8px;
+        font-size: 14px;
+        text-align: center;
+        color: #555;
+      }
+
+      /* コマのイメージ（黒・白） */
+      .stone-row {
+        display: flex;
+        justify-content: center;
+        gap: 24px;
+        margin: 8px 0 12px;
+      }
+
+      .stone-row img {
+        width: 64px;
+        height: 64px;
+        object-fit: contain;
+      }
+
+      /* 説明文 */
+      .menu-desc {
+        font-size: 14px;
+        line-height: 1.6;
+        text-align: center;
+        margin: 0 0 12px;
+      }
+
+      /* ボタンエリア */
+      .menu-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+      }
+
+      .menu-buttons button {
+        min-width: 140px;
+        padding: 8px 16px;
+        border-radius: 999px;
+        border: none;
+        font-size: 14px;
+        cursor: pointer;
+        background: #ffffff;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+      }
+
+      .menu-buttons button:active {
+        transform: translateY(1px);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+      }
+
+      /* キャラ＋フキダシ */
+      #chara-section {
+        margin-top: 8px;
+        position: relative;
+      }
+
+      #chara-bubble {
+        width: 100%;
+        height: auto;
+        display: block;
+      }
+
+      #bubble-text {
+        position: absolute;
+        left: 18%;
+        top: 20%;
+        font-size: 16px;
+        font-weight: 500;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="menu-wrapper">
+      <!-- タイトル -->
+      <h1 class="menu-title">姪っ狐のオセロ対戦</h1>
+      <p class="menu-subtitle">Mei-kitsune Othello Menu</p>
+
+      <!-- コマのイメージ（既存の black / white を流用） -->
+      <div class="stone-row">
+        <img src="images/black.png" alt="黒石" />
+        <img src="images/white.png" alt="白石" />
+      </div>
+
+      <!-- 説明 -->
+      <p class="menu-desc">
+        黒があなた、白がAIだよ。<br />
+        ルールは普通のオセロ。<br />
+        好きなサイズを選んでね。
+      </p>
+
+      <!-- サイズ選択ボタン -->
+      <div class="menu-buttons">
+        <button id="play-6x6" type="button">6×6（お手軽）</button>
+        <button id="play-8x8" type="button">8×8（通常版）</button>
+      </div>
+
+      <!-- キャラ＋フキダシ（既存の chara_bubble 流用） -->
+      <section id="chara-section">
+        <img
+          id="chara-bubble"
+          src="images/chara_bubble.png"
+          alt="姪っ狐とフキダシ"
+        />
+        <p id="bubble-text">どっちで遊ぶ？</p>
+      </section>
+    </div>
+
+    <script>
+      // メニューのボタン処理
+      document.addEventListener("DOMContentLoaded", () => {
+        const btn6 = document.getElementById("play-6x6");
+        const btn8 = document.getElementById("play-8x8");
+
+        // ここはあなたの実際のファイル名に合わせて変更
+        btn6.addEventListener("click", () => {
+          // 6×6 版（現状 index.html を想定）
+          window.location.href = "index.html";
+        });
+
+        btn8.addEventListener("click", () => {
+          // 8×8 版（fullversion.html を想定）
+          window.location.href = "fullversion.html";
+        });
+      });
+    </script>
+  </body>
+</html>
