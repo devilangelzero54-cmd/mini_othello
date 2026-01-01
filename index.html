@@ -585,14 +585,12 @@
 
         retryButton.addEventListener("click", () => {
           overlay.classList.add("hidden");
+        menuButton.addEventListener("click", () => {
+          window.location.href = "menu.html";
           initBoard();
           renderBoard();
           updateBubbleForTurn();
-          handleTurnStart();
-        menuButton.addEventListener("click", () => {
-    // TODO: メニュー（ゲーム選択）の URL に書き換える
-    // 例: window.location.href = "mini-games.html";
-    window.location.href = "menu.html";  
+          handleTurnStart();  
         });
       }
 
