@@ -201,7 +201,7 @@
     </div>
 
     <!-- ルール表示オーバーレイ -->
-    <div id="rule-overlay" class="overlay">
+    <div id="rule-overlay" class="overlay hidden">
       <div class="overlay-panel">
         <h2>あそびかた</h2>
         <p>8×8のオセロだよ。黒があなた、白がAIだよ。</p>
@@ -211,7 +211,7 @@
           <li>どこにも打てないときは自動でパスになります。</li>
           <li>両方とも打てなくなったらゲーム終了。石の多い方が勝ち！</li>
         </ul>
-        <button id="start-button" type="button">ゲームスタート</button>
+        <button id="rule-close" type="button">とじる</button>
       </div>
     </div>
 
@@ -520,16 +520,17 @@
 
       function setupRuleOverlay() {
         const ruleOverlay = document.getElementById("rule-overlay");
-        const startButton = document.getElementById("start-button");
-        const ruleButton = document.getElementById("rule-button");
+        const ruleButton  = document.getElementById("rule-button");
+        const ruleClose   = document.getElementById("rule-close");
 
-        startButton.addEventListener("click", () => {
-          ruleOverlay.classList.add("hidden");
-          handleTurnStart();
-        });
-
+        // 右上「？」でルールを開く
         ruleButton.addEventListener("click", () => {
           ruleOverlay.classList.remove("hidden");
+        });
+
+        // 「とじる」で閉じる
+        ruleClose.addEventListener("click", () => {
+          ruleOverlay.classList.add("hidden");
         });
       }
 
