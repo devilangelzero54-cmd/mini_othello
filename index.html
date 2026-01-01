@@ -585,12 +585,14 @@
 
         retryButton.addEventListener("click", () => {
           overlay.classList.add("hidden");
-        menuButton.addEventListener("click", () => {
-          window.location.href = "menu.html";
           initBoard();
           renderBoard();
           updateBubbleForTurn();
           handleTurnStart();  
+        });
+        // メニューにもどる
+        menuButton.addEventListener("click", () => {
+          window.location.href = "menu.html";
         });
       }
 
